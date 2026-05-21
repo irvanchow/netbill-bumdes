@@ -3,9 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { appSettings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
+import { put, del } from "@vercel/blob";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -29,40 +27,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Ukuran file maksimal 2MB" }, { status: 400 });
   }
 
-  const uploadsDir = join(process.cwd(), "public", "uploads", "logo");
-  await mkdir(uploadsDir, { recursive: true });
-
-  // Delete old logo if exists
+  // Delete old logo from blob storage if exists
   const [existing] = await db.select().from(appSettings).limit(1);
   if (existing?.logoUrl) {
     try {
-      const oldPath = join(process.cwd(), "public", existing.logoUrl);
-      await unlink(oldPath);
+      await del(existing.logoUrl);
     } catch {}
   }
 
-  const ext = file.name.split(".").pop() || "png";
-  const filename = `${randomUUID()}.${ext}`;
-  const filepath = join(uploadsDir, filename);
-
-  const bytes = await file.arrayBuffer();
-  await writeFile(filepath, Buffer.from(bytes));
-
-  const url = `/uploads/logo/${filename}`;
+  // Upload to Vercel Blob
+  const blob = await put(`logo/${file.name}`, file, {
+    access: "public",
+    addRandomSuffix: true,
+  });
 
   // Update database
   if (existing) {
     await db
       .update(appSettings)
-      .set({ logoUrl: url, updatedAt: new Date() })
+      .set({ logoUrl: blob.url, updatedAt: new Date() })
       .where(eq(appSettings.id, existing.id));
   } else {
     await db.insert(appSettings).values({
       appName: "Bill BumdesNET",
       bumdesAddress: "",
-      logoUrl: url,
+      logoUrl: blob.url,
     });
   }
 
-  return NextResponse.json({ url }, { status: 201 });
+  return NextResponse.json({ url: blob.url }, { status: 201 });
 }
