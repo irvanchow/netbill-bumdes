@@ -5,6 +5,7 @@ import { payments, bills } from "@/lib/db/schema";
 import { eq, desc, sql, and, like } from "drizzle-orm";
 import { pembayaranSchema } from "@/lib/validators";
 import { users, customers } from "@/lib/db/schema";
+import { updateCustomerStatusAfterPayment } from "@/lib/billing";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -122,6 +123,9 @@ export async function POST(request: NextRequest) {
     .update(bills)
     .set({ status: "lunas", updatedAt: new Date() })
     .where(eq(bills.id, parsed.data.billId));
+
+  // Update customer status based on remaining unpaid bills
+  await updateCustomerStatusAfterPayment(bill.customerId);
 
   return NextResponse.json({ data: payment, transactionCode, paymentTime: timeStr }, { status: 201 });
 }

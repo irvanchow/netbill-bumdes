@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["admin", "collector"]);
-export const customerStatusEnum = pgEnum("customer_status", ["aktif", "nonaktif"]);
+export const customerStatusEnum = pgEnum("customer_status", ["aktif", "suspend", "nonaktif"]);
 export const billStatusEnum = pgEnum("bill_status", ["belum_bayar", "lunas"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["tunai", "transfer"]);
 export const packageCategoryEnum = pgEnum("package_category", ["wireless_broadband", "fiber_optik"]);

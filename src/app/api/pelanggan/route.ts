@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { customers, internetPackages, users } from "@/lib/db/schema";
 import { eq, ilike, and, or, sql, desc } from "drizzle-orm";
 import { pelangganSchema } from "@/lib/validators";
+import { generateFirstBill } from "@/lib/billing";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (status === "aktif" || status === "nonaktif") {
+  if (status === "aktif" || status === "nonaktif" || status === "suspend") {
     conditions.push(eq(customers.status, status));
   }
 
@@ -106,6 +107,11 @@ export async function POST(request: NextRequest) {
       assignedCollectorId: parsed.data.assignedCollectorId || null,
     })
     .returning();
+
+  // Generate first bill if activationDate is provided
+  if (parsed.data.activationDate) {
+    await generateFirstBill(newCustomer.id, new Date(parsed.data.activationDate));
+  }
 
   return NextResponse.json({ data: newCustomer }, { status: 201 });
 }

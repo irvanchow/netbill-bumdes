@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateMonthlyBills, updateCustomerStatuses } from "@/lib/billing";
+import { updateCustomerStatuses } from "@/lib/billing";
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -9,13 +9,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const now = new Date();
-  const result = await generateMonthlyBills(now);
-  const statusResult = await updateCustomerStatuses();
+  const result = await updateCustomerStatuses();
 
   return NextResponse.json({
-    message: "Tagihan berhasil digenerate",
+    message: "Status pelanggan berhasil diupdate",
     ...result,
-    statusUpdates: statusResult,
   });
 }

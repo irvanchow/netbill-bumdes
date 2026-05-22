@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { customers, internetPackages, users, bills, payments } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { pelangganSchema } from "@/lib/validators";
+import { generateFirstBill } from "@/lib/billing";
 
 export async function GET(
   request: NextRequest,
@@ -82,6 +83,13 @@ export async function PUT(
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
+  // Get current customer to check if activationDate is being set for the first time
+  const [current] = await db
+    .select({ activationDate: customers.activationDate })
+    .from(customers)
+    .where(eq(customers.id, id))
+    .limit(1);
+
   const [updated] = await db
     .update(customers)
     .set({
@@ -101,6 +109,11 @@ export async function PUT(
     .returning();
 
   if (!updated) return NextResponse.json({ error: "Pelanggan tidak ditemukan" }, { status: 404 });
+
+  // Generate first bill if activationDate is being set for the first time
+  if (!current?.activationDate && parsed.data.activationDate) {
+    await generateFirstBill(id, new Date(parsed.data.activationDate));
+  }
 
   return NextResponse.json({ data: updated });
 }
