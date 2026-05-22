@@ -54,7 +54,6 @@ export default function TambahPelangganPage() {
       email: formData.get("email") as string,
       packageId: formData.get("packageId") as string,
       registrationDate: formData.get("registrationDate") as string,
-      activationDate: formData.get("activationDate") as string,
       latitude,
       longitude,
       assignedCollectorId: formData.get("assignedCollectorId") as string,

@@ -123,8 +123,8 @@ export async function generateFirstBill(customerId: string, activationDate: Date
 
 export async function generateInstallationBill(customerId: string) {
   const now = new Date();
-  const billPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
-  const billPeriodStr = billPeriod.toISOString().split("T")[0];
+  // Use registration date (today) as billPeriod to avoid conflict with monthly bills
+  const billPeriodStr = now.toISOString().split("T")[0];
   const dueDate = new Date(now.getFullYear(), now.getMonth(), 27);
   const dueDateStr = dueDate.toISOString().split("T")[0];
 
@@ -135,7 +135,7 @@ export async function generateInstallationBill(customerId: string) {
     .where(eq(bills.billType, "instalasi"));
 
   const sequence = (countResult?.count ?? 0) + 1;
-  const invoiceNumber = generateInstallationInvoiceNumber(billPeriod, sequence);
+  const invoiceNumber = generateInstallationInvoiceNumber(now, sequence);
 
   const [bill] = await db.insert(bills).values({
     customerId,
