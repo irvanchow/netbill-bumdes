@@ -11,6 +11,16 @@ export async function generateMonthlyBills(period: Date) {
   const dueDate = new Date(period.getFullYear(), period.getMonth(), 27);
   const dueDateStr = dueDate.toISOString().split("T")[0];
 
+  // Cutoff: customers activated on or before 27th of previous month are eligible
+  // If activated <= 27 of current month, eligible for current month
+  // If activated > 27 of previous month but <= 27 current month, eligible for current month
+  const cutoffDate = new Date(period.getFullYear(), period.getMonth(), 27);
+  const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+  // Previous month 27th - customers activated after this date but before current 27th get their first bill this month
+  const prevCutoff = new Date(period.getFullYear(), period.getMonth() - 1, 27);
+  const prevCutoffStr = prevCutoff.toISOString().split("T")[0];
+
   const eligibleCustomers = await db
     .select({
       id: customers.id,
@@ -24,7 +34,7 @@ export async function generateMonthlyBills(period: Date) {
       and(
         inArray(customers.status, ["aktif", "suspend"]),
         sql`${customers.activationDate} IS NOT NULL`,
-        sql`${customers.activationDate} <= ${billPeriodStr}`
+        sql`${customers.activationDate} <= ${cutoffStr}`
       )
     );
 
