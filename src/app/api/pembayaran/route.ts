@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     .where(eq(bills.id, parsed.data.billId));
 
   // Update customer status based on remaining unpaid bills
-  await updateCustomerStatusAfterPayment(bill.customerId);
+  await updateCustomerStatusAfterPayment(bill.customerId, parsed.data.billId);
 
   return NextResponse.json({ data: payment, transactionCode, paymentTime: timeStr }, { status: 201 });
 }

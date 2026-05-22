@@ -48,3 +48,10 @@ export function generateInvoiceNumber(period: Date, sequence: number): string {
   const seq = String(sequence).padStart(4, "0");
   return `INV-${year}${month}-${seq}`;
 }
+
+export function generateInstallationInvoiceNumber(period: Date, sequence: number): string {
+  const year = period.getFullYear();
+  const month = String(period.getMonth() + 1).padStart(2, "0");
+  const seq = String(sequence).padStart(4, "0");
+  return `INV-N${year}${month}-${seq}`;
+}

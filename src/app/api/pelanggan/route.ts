@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { customers, internetPackages, users } from "@/lib/db/schema";
 import { eq, ilike, and, or, sql, desc } from "drizzle-orm";
 import { pelangganSchema } from "@/lib/validators";
-import { generateFirstBill } from "@/lib/billing";
+import { generateInstallationBill } from "@/lib/billing";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (status === "aktif" || status === "nonaktif" || status === "suspend") {
+  if (status === "aktif" || status === "nonaktif" || status === "suspend" || status === "belum_aktif") {
     conditions.push(eq(customers.status, status));
   }
 
@@ -105,13 +105,12 @@ export async function POST(request: NextRequest) {
       latitude: parsed.data.latitude ? String(parsed.data.latitude) : null,
       longitude: parsed.data.longitude ? String(parsed.data.longitude) : null,
       assignedCollectorId: parsed.data.assignedCollectorId || null,
+      status: "belum_aktif",
     })
     .returning();
 
-  // Generate first bill if activationDate is provided
-  if (parsed.data.activationDate) {
-    await generateFirstBill(newCustomer.id, new Date(parsed.data.activationDate));
-  }
+  // Generate installation bill for new customer
+  await generateInstallationBill(newCustomer.id);
 
   return NextResponse.json({ data: newCustomer }, { status: 201 });
 }

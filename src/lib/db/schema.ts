@@ -13,8 +13,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["admin", "collector"]);
-export const customerStatusEnum = pgEnum("customer_status", ["aktif", "suspend", "nonaktif"]);
+export const customerStatusEnum = pgEnum("customer_status", ["belum_aktif", "aktif", "suspend", "nonaktif"]);
 export const billStatusEnum = pgEnum("bill_status", ["belum_bayar", "lunas"]);
+export const billTypeEnum = pgEnum("bill_type", ["bulanan", "instalasi"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["tunai", "transfer"]);
 export const packageCategoryEnum = pgEnum("package_category", ["wireless_broadband", "fiber_optik"]);
 
@@ -54,7 +55,7 @@ export const customers = pgTable("customers", {
   activationDate: date("activation_date"),
   latitude: numeric("latitude", { precision: 10, scale: 7 }),
   longitude: numeric("longitude", { precision: 10, scale: 7 }),
-  status: customerStatusEnum("status").default("aktif").notNull(),
+  status: customerStatusEnum("status").default("belum_aktif").notNull(),
   assignedCollectorId: uuid("assigned_collector_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -70,6 +71,7 @@ export const bills = pgTable(
     billPeriod: date("bill_period").notNull(),
     amount: integer("amount").notNull(),
     status: billStatusEnum("status").default("belum_bayar").notNull(),
+    billType: billTypeEnum("bill_type").default("bulanan").notNull(),
     dueDate: date("due_date").notNull(),
     invoiceNumber: varchar("invoice_number", { length: 20 }).notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),

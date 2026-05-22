@@ -155,6 +155,7 @@ interface InvoiceData {
   dueDate: string;
   amount: number;
   status: string;
+  billType?: string;
   customerName: string;
   customerAddress: string;
   customerPhone: string;
@@ -234,10 +235,14 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
             <View style={styles.tableRow}>
               <View style={styles.tableCol1}>
                 <Text style={{ color: "#1f2937", fontFamily: "Helvetica-Bold" }}>
-                  Layanan Internet - {data.packageName}
+                  {data.billType === "instalasi"
+                    ? "Biaya Pemasangan/Instalasi"
+                    : `Layanan Internet - ${data.packageName}`}
                 </Text>
                 <Text style={{ color: "#6b7280", fontSize: 9, marginTop: 2 }}>
-                  Kecepatan: {data.packageSpeed} | Periode: {formatDatePdf(data.billPeriod)}
+                  {data.billType === "instalasi"
+                    ? `Paket: ${data.packageName} | ${data.packageSpeed}`
+                    : `Kecepatan: ${data.packageSpeed} | Periode: ${formatDatePdf(data.billPeriod)}`}
                 </Text>
               </View>
               <Text style={[styles.tableCol2, { color: "#1f2937" }]}>

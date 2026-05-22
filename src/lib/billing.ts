@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
 import { bills, customers, internetPackages } from "@/lib/db/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
-import { generateInvoiceNumber } from "@/lib/utils";
+import { generateInvoiceNumber, generateInstallationInvoiceNumber } from "@/lib/utils";
+
+const INSTALLATION_FEE = 500000;
 
 export async function generateMonthlyBills(period: Date) {
   const billPeriod = new Date(period.getFullYear(), period.getMonth(), 1);
@@ -119,6 +121,35 @@ export async function generateFirstBill(customerId: string, activationDate: Date
   return bill;
 }
 
+export async function generateInstallationBill(customerId: string) {
+  const now = new Date();
+  const billPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+  const billPeriodStr = billPeriod.toISOString().split("T")[0];
+  const dueDate = new Date(now.getFullYear(), now.getMonth(), 27);
+  const dueDateStr = dueDate.toISOString().split("T")[0];
+
+  // Count existing installation invoices for sequence
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(bills)
+    .where(eq(bills.billType, "instalasi"));
+
+  const sequence = (countResult?.count ?? 0) + 1;
+  const invoiceNumber = generateInstallationInvoiceNumber(billPeriod, sequence);
+
+  const [bill] = await db.insert(bills).values({
+    customerId,
+    billPeriod: billPeriodStr,
+    amount: INSTALLATION_FEE,
+    status: "belum_bayar",
+    billType: "instalasi",
+    dueDate: dueDateStr,
+    invoiceNumber,
+  }).returning();
+
+  return bill;
+}
+
 export async function updateCustomerStatuses() {
   const results = await db
     .select({
@@ -167,21 +198,48 @@ export async function updateCustomerStatuses() {
   return { toAktif, toSuspend, toNonaktif };
 }
 
-export async function updateCustomerStatusAfterPayment(customerId: string) {
+export async function updateCustomerStatusAfterPayment(customerId: string, billId: string) {
+  // Check if the paid bill is an installation bill
+  const [paidBill] = await db
+    .select({ billType: bills.billType })
+    .from(bills)
+    .where(eq(bills.id, billId))
+    .limit(1);
+
+  // Get current customer status
+  const [customer] = await db
+    .select({ status: customers.status, activationDate: customers.activationDate })
+    .from(customers)
+    .where(eq(customers.id, customerId))
+    .limit(1);
+
+  // If installation bill paid and customer is "belum_aktif", set to "aktif"
+  if (paidBill?.billType === "instalasi" && customer?.status === "belum_aktif") {
+    await db
+      .update(customers)
+      .set({ status: "aktif", updatedAt: new Date() })
+      .where(eq(customers.id, customerId));
+    return "aktif";
+  }
+
+  // For monthly bills, count remaining unpaid monthly bills
   const [result] = await db
     .select({ unpaidCount: sql<number>`count(*)::int` })
     .from(bills)
     .where(
       and(
         eq(bills.customerId, customerId),
-        eq(bills.status, "belum_bayar")
+        eq(bills.status, "belum_bayar"),
+        eq(bills.billType, "bulanan")
       )
     );
 
-  let newStatus: "aktif" | "suspend" | "nonaktif";
+  let newStatus: "belum_aktif" | "aktif" | "suspend" | "nonaktif";
   const unpaidCount = result?.unpaidCount ?? 0;
 
-  if (unpaidCount === 0) {
+  if (customer?.status === "belum_aktif") {
+    newStatus = "belum_aktif";
+  } else if (unpaidCount === 0) {
     newStatus = "aktif";
   } else if (unpaidCount === 1) {
     newStatus = "suspend";
