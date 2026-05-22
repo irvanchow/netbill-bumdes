@@ -69,7 +69,8 @@ export default function TambahPelangganPage() {
       toast.success("Pelanggan berhasil ditambahkan");
       router.push("/pelanggan");
     } else {
-      toast.error("Gagal menambahkan pelanggan");
+      const json = await res.json();
+      toast.error(json.error || "Gagal menambahkan pelanggan");
     }
     setLoading(false);
   }

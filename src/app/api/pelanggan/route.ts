@@ -92,25 +92,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const [newCustomer] = await db
-    .insert(customers)
-    .values({
-      name: parsed.data.name,
-      address: parsed.data.address,
-      phone: parsed.data.phone,
-      email: parsed.data.email || null,
-      packageId: parsed.data.packageId,
-      registrationDate: parsed.data.registrationDate,
-      activationDate: parsed.data.activationDate || null,
-      latitude: parsed.data.latitude ? String(parsed.data.latitude) : null,
-      longitude: parsed.data.longitude ? String(parsed.data.longitude) : null,
-      assignedCollectorId: parsed.data.assignedCollectorId || null,
-      status: "belum_aktif",
-    })
-    .returning();
+  try {
+    const [newCustomer] = await db
+      .insert(customers)
+      .values({
+        name: parsed.data.name,
+        address: parsed.data.address,
+        phone: parsed.data.phone,
+        email: parsed.data.email || null,
+        packageId: parsed.data.packageId,
+        registrationDate: parsed.data.registrationDate,
+        activationDate: parsed.data.activationDate || null,
+        latitude: parsed.data.latitude ? String(parsed.data.latitude) : null,
+        longitude: parsed.data.longitude ? String(parsed.data.longitude) : null,
+        assignedCollectorId: parsed.data.assignedCollectorId || null,
+        status: "belum_aktif",
+      })
+      .returning();
 
-  // Generate installation bill for new customer
-  await generateInstallationBill(newCustomer.id);
+    // Generate installation bill for new customer
+    await generateInstallationBill(newCustomer.id);
 
-  return NextResponse.json({ data: newCustomer }, { status: 201 });
+    return NextResponse.json({ data: newCustomer }, { status: 201 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Gagal menambahkan pelanggan";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
