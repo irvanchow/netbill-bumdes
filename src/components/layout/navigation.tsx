@@ -103,7 +103,7 @@ export function Sidebar() {
             </div>
             {!collapsed && (
               <div className="leading-tight">
-                <h1 className="text-xs font-semibold text-foreground">Bumdesa GIRI MANDALA</h1>
+                <h1 className="text-xs font-semibold text-foreground whitespace-nowrap">Bumdesa GIRI MANDALA</h1>
                 <p className="text-[10px] text-muted-foreground">Sistem Billing Internet</p>
               </div>
             )}
