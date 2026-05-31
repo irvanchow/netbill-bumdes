@@ -90,7 +90,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   summaryValue: {
-    width: 90,
     textAlign: "right",
     fontFamily: "Helvetica-Bold",
     fontSize: 9,
@@ -191,8 +190,8 @@ export function RekapTagihanDocument({ data }: { data: RekapData }) {
           ))}
 
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, styles.colNo]}></Text>
-            <Text style={[styles.summaryLabel, styles.colPeriod]}>Total</Text>
+            <Text style={[styles.summaryValue, styles.colNo]}></Text>
+            <Text style={[{ fontFamily: "Helvetica-Bold", fontSize: 9 }, styles.colPeriod]}>Total</Text>
             <Text style={[styles.summaryValue, styles.colCount]}>{data.summary.totalBills}</Text>
             <Text style={[styles.summaryValue, styles.colCount, { color: "#059669" }]}>{data.summary.paidBills}</Text>
             <Text style={[styles.summaryValue, styles.colCount, { color: "#dc2626" }]}>{data.summary.unpaidBills}</Text>
