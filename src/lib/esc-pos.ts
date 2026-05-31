@@ -62,6 +62,7 @@ export interface ReceiptData {
   invoiceNumber: string;
   paymentDate: string;
   paymentTime: string;
+  billType?: string;
   customerName: string;
   customerAddress: string;
   packageName: string;
@@ -96,8 +97,7 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
   parts.push(ALIGN_LEFT);
   parts.push(line(`Kode Trx    : ${data.transactionCode}`));
   parts.push(line(`No. Invoice : ${data.invoiceNumber}`));
-  parts.push(line(`Tanggal     : ${data.paymentDate}`));
-  parts.push(line(`Waktu       : ${data.paymentTime}`));
+  parts.push(line(`Tanggal     : ${data.paymentDate} ${data.paymentTime}`));
   parts.push(separator());
 
   // Customer info
@@ -111,6 +111,7 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
   parts.push(line(padRight("Tagihan     :", formatRupiahPlain(data.amount))));
   parts.push(line(padRight("Dibayar     :", formatRupiahPlain(data.amount))));
   parts.push(line(`Metode      : ${data.paymentMethod === "tunai" ? "Tunai" : "Transfer"}`));
+  parts.push(line(`Keterangan  : ${data.billType === "instalasi" ? "Biaya Instalasi" : "Biaya Internet"}`));
   parts.push(separator());
 
   // Collector
