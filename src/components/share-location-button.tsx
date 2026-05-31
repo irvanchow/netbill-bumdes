@@ -23,7 +23,7 @@ export function ShareLocationButton({
   function handleShare() {
     const mapsUrl = `https://maps.google.com/maps?q=${latitude},${longitude}`;
     const message = encodeURIComponent(
-      `📍 Pemasangan Internet BumdesNET\n\nPelanggan: ${customerName}\nAlamat: ${address}\nLokasi: ${mapsUrl}`
+      `Pemasangan Internet BumdesNET\n\nPelanggan: ${customerName}\nAlamat: ${address}\nLokasi: ${mapsUrl}`
     );
     window.open(`https://wa.me/?text=${message}`, "_blank");
   }
