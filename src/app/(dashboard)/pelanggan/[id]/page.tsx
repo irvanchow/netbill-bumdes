@@ -245,19 +245,23 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
               </div>
               <div className="space-y-2">
                 <Label htmlFor="packageId">Paket Internet</Label>
-                <select
-                  id="packageId"
-                  name="packageId"
-                  defaultValue={customer.packageId}
-                  required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {packages.map((pkg) => (
-                    <option key={pkg.id} value={pkg.id}>
-                      {pkg.name} - {pkg.speed}
-                    </option>
-                  ))}
-                </select>
+                {packages.length > 0 ? (
+                  <select
+                    id="packageId"
+                    name="packageId"
+                    defaultValue={customer.packageId}
+                    required
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    {packages.map((pkg) => (
+                      <option key={pkg.id} value={pkg.id}>
+                        {pkg.name} - {pkg.speed}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="h-9 rounded-md border border-input bg-background animate-pulse" />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="registrationDate">Tanggal Registrasi</Label>
