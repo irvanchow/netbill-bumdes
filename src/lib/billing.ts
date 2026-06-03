@@ -11,15 +11,12 @@ export async function generateMonthlyBills(period: Date) {
   const dueDate = new Date(period.getFullYear(), period.getMonth(), 27);
   const dueDateStr = toLocalDateStr(dueDate);
 
-  // Cutoff: customers activated on or before 27th of previous month are eligible
-  // If activated <= 27 of current month, eligible for current month
-  // If activated > 27 of previous month but <= 27 current month, eligible for current month
+  // Cutoff: only bill customers already activated on or before the 27th of the
+  // billing month. The first bill for newly activated customers is created when
+  // their installation bill is paid (see updateCustomerStatusAfterPayment), so the
+  // existing-bill guard below skips anyone whose current-period bill already exists.
   const cutoffDate = new Date(period.getFullYear(), period.getMonth(), 27);
   const cutoffStr = toLocalDateStr(cutoffDate);
-
-  // Previous month 27th - customers activated after this date but before current 27th get their first bill this month
-  const prevCutoff = new Date(period.getFullYear(), period.getMonth() - 1, 27);
-  const prevCutoffStr = toLocalDateStr(prevCutoff);
 
   const eligibleCustomers = await db
     .select({
@@ -82,9 +79,16 @@ export async function generateMonthlyBills(period: Date) {
 }
 
 export async function generateFirstBill(customerId: string, activationDate: Date) {
-  const billPeriod = new Date(activationDate.getFullYear(), activationDate.getMonth(), 1);
+  // Prepaid rule: due date of the first monthly bill depends on the activation day.
+  // Activation day 1-25 -> first bill for the SAME month (due 27th this month).
+  // Activation day 28-31 -> first bill for the NEXT month (due 27th next month).
+  // (Days 26 & 27 are rejected by the validator, so no installation lands there.)
+  const day = activationDate.getDate();
+  const periodMonth = day > 25 ? activationDate.getMonth() + 1 : activationDate.getMonth();
+  const billPeriod = new Date(activationDate.getFullYear(), periodMonth, 1); // Dec->Jan rolls over automatically
   const billPeriodStr = toLocalDateStr(billPeriod);
-  const dueDate = new Date(activationDate.getFullYear(), activationDate.getMonth(), 27);
+  // Derive due date from the normalized billPeriod, not raw periodMonth, to keep the year correct on rollover.
+  const dueDate = new Date(billPeriod.getFullYear(), billPeriod.getMonth(), 27);
   const dueDateStr = toLocalDateStr(dueDate);
 
   // Check if bill already exists
@@ -229,6 +233,18 @@ export async function updateCustomerStatusAfterPayment(customerId: string, billI
       .update(customers)
       .set({ status: "aktif", updatedAt: new Date() })
       .where(eq(customers.id, customerId));
+
+    // Prepaid: create the first monthly bill now, with a due date derived from
+    // the activation date. activationDate is a DB "date" string (YYYY-MM-DD);
+    // parse its parts manually and build a local Date — never new Date(string),
+    // which parses as UTC and can shift the day on the WITA (UTC+8) server.
+    if (customer.activationDate) {
+      const [yy, mm, dd] = customer.activationDate.split("-").map(Number);
+      if (!Number.isNaN(yy) && !Number.isNaN(mm) && !Number.isNaN(dd)) {
+        await generateFirstBill(customerId, new Date(yy, mm - 1, dd));
+      }
+    }
+
     return "aktif";
   }
 

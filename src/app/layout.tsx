@@ -22,6 +22,9 @@ const fontMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "BumDes Net - Sistem Billing Internet",
   description: "Aplikasi manajemen billing internet BumDes Jelijih Punggang",
+  icons: {
+    icon: "/logo-bumdes.jpeg",
+  },
 };
 
 export default function RootLayout({

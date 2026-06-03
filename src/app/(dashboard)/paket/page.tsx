@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2, Power } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface Package {
   id: string;
@@ -25,12 +26,54 @@ export default function PaketPage() {
   const [loading, setLoading] = useState(true);
   const isAdmin = session?.user?.role === "admin";
 
-  useEffect(() => {
+  const fetchPackages = () => {
     fetch("/api/paket")
       .then((res) => res.json())
       .then((res) => setPackages(res.data || []))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchPackages();
   }, []);
+
+  const handleToggleActive = async (pkg: Package) => {
+    const action = pkg.isActive ? "nonaktifkan" : "aktifkan";
+    if (!confirm(`Yakin ingin ${action} paket "${pkg.name}"?`)) return;
+
+    const res = await fetch(`/api/paket/${pkg.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: pkg.name,
+        category: pkg.category,
+        speed: pkg.speed,
+        monthlyPrice: pkg.monthlyPrice,
+        description: pkg.description || "",
+        isActive: !pkg.isActive,
+      }),
+    });
+
+    if (res.ok) {
+      toast.success(`Paket berhasil di${action}`);
+      fetchPackages();
+    } else {
+      toast.error(`Gagal ${action} paket`);
+    }
+  };
+
+  const handleDelete = async (pkg: Package) => {
+    if (!confirm(`Yakin ingin menghapus paket "${pkg.name}"? Paket akan dinonaktifkan secara permanen.`)) return;
+
+    const res = await fetch(`/api/paket/${pkg.id}`, { method: "DELETE" });
+
+    if (res.ok) {
+      toast.success("Paket berhasil dihapus");
+      fetchPackages();
+    } else {
+      toast.error("Gagal menghapus paket");
+    }
+  };
 
   if (loading) {
     return (
@@ -87,12 +130,32 @@ export default function PaketPage() {
                   <p className="text-sm text-muted-foreground">{pkg.description}</p>
                 )}
                 {isAdmin && (
-                  <Link href={`/paket/${pkg.id}`}>
-                    <Button variant="ghost" size="sm" className="mt-1 text-muted-foreground hover:text-foreground">
-                      <Pencil className="h-3.5 w-3.5 mr-1" />
-                      Edit
+                  <div className="flex items-center gap-1 mt-1">
+                    <Link href={`/paket/${pkg.id}`}>
+                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        Edit
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={pkg.isActive ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"}
+                      onClick={() => handleToggleActive(pkg)}
+                    >
+                      <Power className="h-3.5 w-3.5 mr-1" />
+                      {pkg.isActive ? "Nonaktifkan" : "Aktifkan"}
                     </Button>
-                  </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDelete(pkg)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      Hapus
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>

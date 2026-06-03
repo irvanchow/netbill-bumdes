@@ -6,6 +6,7 @@ export const paketSchema = z.object({
   speed: z.string().min(1, "Kecepatan wajib diisi"),
   monthlyPrice: z.number().min(1, "Harga wajib diisi"),
   description: z.string().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const pelangganSchema = z.object({
@@ -15,7 +16,19 @@ export const pelangganSchema = z.object({
   email: z.string().email("Email tidak valid").optional().or(z.literal("")),
   packageId: z.string().uuid("Paket wajib dipilih"),
   registrationDate: z.string().min(1, "Tanggal registrasi wajib diisi"),
-  activationDate: z.string().optional().or(z.literal("")),
+  activationDate: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (val) => {
+        if (!val) return true; // kosong/undefined → lolos
+        const day = Number(val.split("-")[2]);
+        if (Number.isNaN(day)) return true; // biar validasi format lain yang urus
+        return day !== 26 && day !== 27;
+      },
+      { message: "Tanggal aktivasi tidak boleh tanggal 26 atau 27 (tidak ada instalasi)" }
+    ),
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
   assignedCollectorId: z.string().uuid().optional().or(z.literal("")),

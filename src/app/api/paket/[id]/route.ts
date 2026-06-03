@@ -47,6 +47,7 @@ export async function PUT(
       speed: parsed.data.speed,
       monthlyPrice: parsed.data.monthlyPrice,
       description: parsed.data.description || null,
+      isActive: parsed.data.isActive ?? true,
       updatedAt: new Date(),
     })
     .where(eq(internetPackages.id, id))
