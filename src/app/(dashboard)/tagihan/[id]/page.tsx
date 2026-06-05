@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, CreditCard, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { formatRupiah, formatDate, getBatasAkhir } from "@/lib/utils";
+import { formatRupiah, formatDate, formatMonthYear, getBatasAkhir } from "@/lib/utils";
 import { PrintReceiptButton } from "@/components/print-receipt-button";
 
 interface Payment {
@@ -100,36 +100,75 @@ export default function TagihanDetailPage({ params }: { params: Promise<{ id: st
         <Card className="border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg text-foreground">Invoice {bill.invoiceNumber}</CardTitle>
+              <CardTitle className="text-lg text-foreground">
+                {bill.billType === "instalasi" ? "Biaya Pemasangan" : "Tagihan Bulanan"}
+              </CardTitle>
               <Badge variant={bill.status === "lunas" ? "default" : "destructive"} className={bill.status === "lunas" ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" : "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800"}>
                 {bill.status === "lunas" ? "Lunas" : "Belum Bayar"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Periode</p>
-                <p className="text-foreground">{formatDate(bill.billPeriod)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Jatuh Tempo</p>
-                <p className="text-foreground">{formatDate(bill.dueDate)}</p>
-              </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Invoice</p>
+              <p className="text-foreground font-mono text-sm">{bill.invoiceNumber}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div>
-                <p className="text-sm text-muted-foreground">Batas Akhir</p>
-                <p className="text-foreground">{formatDate(getBatasAkhir(bill.dueDate))}</p>
-              </div>
-            </div>
+
+            {bill.billType === "instalasi" ? (
+              <>
+                <div>
+                  <p className="text-sm text-muted-foreground">Jenis Tagihan</p>
+                  <p className="text-foreground">Biaya Pemasangan/Instalasi</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Paket</p>
+                  <p className="text-foreground">{bill.packageName} ({bill.packageSpeed})</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tanggal Aktivasi</p>
+                  <p className="text-foreground">{bill.activationDate ? formatDate(bill.activationDate) : "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Batas Pembayaran</p>
+                  <p className="text-foreground">
+                    {bill.activationDate
+                      ? formatDate(new Date(
+                          Number(bill.activationDate.split("-")[0]),
+                          Number(bill.activationDate.split("-")[1]) - 1,
+                          Number(bill.activationDate.split("-")[2]) + 3
+                        ))
+                      : "-"}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Periode Billing</p>
+                    <p className="text-foreground">{formatMonthYear(bill.dueDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Jatuh Tempo</p>
+                    <p className="text-foreground">{formatDate(bill.dueDate)}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Batas Akhir</p>
+                    <p className="text-foreground">{formatDate(getBatasAkhir(bill.dueDate))}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Paket</p>
+                  <p className="text-foreground">{bill.packageName} ({bill.packageSpeed})</p>
+                </div>
+              </>
+            )}
+
             <div>
               <p className="text-sm text-muted-foreground">Jumlah Tagihan</p>
               <p className="text-2xl font-bold text-primary">{formatRupiah(bill.amount)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Paket</p>
-              <p className="text-foreground">{bill.packageName} ({bill.packageSpeed})</p>
             </div>
             <div className="flex flex-wrap gap-2 pt-2">
               <a href={`/api/tagihan/${id}/invoice`} target="_blank" rel="noopener noreferrer">
