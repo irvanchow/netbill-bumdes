@@ -80,6 +80,97 @@ export async function generateMonthlyBills(period: Date) {
   return { generated, skipped, total: eligibleCustomers.length };
 }
 
+/** Auto-generate tagihan 7 hari sebelum jatuh tempo per pelanggan.
+ *  Dipanggil oleh cron harian; tidak menggantikan generateMonthlyBills (manual trigger). */
+export async function autoGenerateBills() {
+  const today = new Date();
+  const todayStr = toLocalDateStr(today);
+
+  const eligibleCustomers = await db
+    .select({
+      id: customers.id,
+      packageId: customers.packageId,
+      monthlyPrice: internetPackages.monthlyPrice,
+      activationDate: customers.activationDate,
+    })
+    .from(customers)
+    .innerJoin(internetPackages, eq(customers.packageId, internetPackages.id))
+    .where(
+      and(
+        inArray(customers.status, ["aktif", "suspend"]),
+        sql`${customers.activationDate} IS NOT NULL`
+      )
+    );
+
+  // Check current month and next month:
+  // - Late-month customers (activation day 18-25): bill generated in the same month
+  // - Early-month customers (activation day 1-7): bill generated in the previous month
+  const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+  let generated = 0;
+
+  for (const customer of eligibleCustomers) {
+    const [actYear, actMonth, actDay] = customer.activationDate!
+      .split("-")
+      .map(Number);
+    if (Number.isNaN(actYear) || Number.isNaN(actMonth) || Number.isNaN(actDay)) {
+      continue;
+    }
+
+    // First bill month = activation month + 1 (handled by generateFirstBill).
+    // JS month is 0-indexed, so `new Date(actYear, actMonth, 1)` where
+    // actMonth is 1-indexed from the DB gives the next month.
+    const firstBillMonth = new Date(actYear, actMonth, 1);
+
+    for (const candidate of [currentMonth, nextMonth]) {
+      // Skip activation month — first bill handled by generateFirstBill
+      if (candidate < firstBillMonth) continue;
+
+      const periodStr = toLocalDateStr(candidate);
+
+      // Duplicate check (unique index on customerId + billPeriod)
+      const [existing] = await db
+        .select({ id: bills.id })
+        .from(bills)
+        .where(and(eq(bills.customerId, customer.id), eq(bills.billPeriod, periodStr)))
+        .limit(1);
+      if (existing) continue;
+
+      // Clamp activation day to last day of month (defensive; days > 25 already normalized)
+      const lastDay = new Date(candidate.getFullYear(), candidate.getMonth() + 1, 0).getDate();
+      const dueDay = Math.min(actDay, lastDay);
+      const dueDate = new Date(candidate.getFullYear(), candidate.getMonth(), dueDay);
+
+      // Generate only if today >= (due date - 7 days)
+      const sevenDaysBefore = new Date(dueDate);
+      sevenDaysBefore.setDate(sevenDaysBefore.getDate() - 7);
+      if (today < sevenDaysBefore) continue;
+
+      // Generate the bill
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(bills)
+        .where(eq(bills.billPeriod, periodStr));
+      const sequence = (countResult?.count ?? 0) + 1;
+      const invoiceNumber = generateInvoiceNumber(candidate, sequence);
+
+      await db.insert(bills).values({
+        customerId: customer.id,
+        billPeriod: periodStr,
+        amount: customer.monthlyPrice,
+        status: "belum_bayar",
+        dueDate: toLocalDateStr(dueDate),
+        invoiceNumber,
+      });
+
+      generated++;
+    }
+  }
+
+  return { generated, total: eligibleCustomers.length };
+}
+
 export async function generateFirstBill(customerId: string, activationDate: Date) {
   // dueDate = activationDate + 1 month (same day number)
   // e.g. 01 Mei → 01 Juni, 25 Mei → 25 Juni
