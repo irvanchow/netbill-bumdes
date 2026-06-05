@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { bills, customers, internetPackages } from "@/lib/db/schema";
 import { eq, and, desc, sql, ilike } from "drizzle-orm";
 import { generateMonthlyBills } from "@/lib/billing";
+import { toLocalDateStr } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "10");
   const status = searchParams.get("status") || "";
   const period = searchParams.get("period") || "";
+  const dueWithin = searchParams.get("due_within") || "";
   const search = searchParams.get("search") || "";
   const offset = (page - 1) * limit;
 
@@ -29,6 +31,15 @@ export async function GET(request: NextRequest) {
 
   if (period) {
     conditions.push(eq(bills.billPeriod, period));
+  }
+
+  if (dueWithin) {
+    const days = parseInt(dueWithin);
+    if (!isNaN(days)) {
+      const today = toLocalDateStr(new Date());
+      const future = toLocalDateStr(new Date(Date.now() + days * 86400000));
+      conditions.push(sql`${bills.dueDate} >= ${today} AND ${bills.dueDate} <= ${future}`);
+    }
   }
 
   if (search) {

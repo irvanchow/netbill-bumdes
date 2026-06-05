@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, ChevronLeft, ChevronRight, FileText, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { formatRupiah, formatDate, getBatasAkhir } from "@/lib/utils";
+import { formatRupiah, formatDate, formatMonthYear } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
@@ -39,15 +39,17 @@ export default function TagihanPage() {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0, totalPages: 0 });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [dueWithinFilter, setDueWithinFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const isAdmin = session?.user?.role === "admin";
 
-  const fetchBills = useCallback(async (page: number, searchQuery: string, status: string) => {
+  const fetchBills = useCallback(async (page: number, searchQuery: string, status: string, dueWithin: string) => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: "10" });
     if (searchQuery) params.set("search", searchQuery);
     if (status) params.set("status", status);
+    if (dueWithin) params.set("due_within", dueWithin);
 
     const res = await fetch(`/api/tagihan?${params}`);
     const json = await res.json();
@@ -57,15 +59,15 @@ export default function TagihanPage() {
   }, []);
 
   useEffect(() => {
-    fetchBills(1, "", "");
+    fetchBills(1, "", "", "");
   }, [fetchBills]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      fetchBills(1, search, statusFilter);
+      fetchBills(1, search, statusFilter, dueWithinFilter);
     }, 300);
     return () => clearTimeout(timeout);
-  }, [search, statusFilter, fetchBills]);
+  }, [search, statusFilter, dueWithinFilter, fetchBills]);
 
   async function handleGenerate() {
     if (!confirm("Generate tagihan untuk bulan ini? Tagihan akan dibuat untuk semua pelanggan aktif.")) return;
@@ -78,7 +80,7 @@ export default function TagihanPage() {
     const json = await res.json();
     if (res.ok) {
       toast.success(`Berhasil: ${json.generated} tagihan dibuat, ${json.skipped} dilewati`);
-      fetchBills(1, search, statusFilter);
+      fetchBills(1, search, statusFilter, dueWithinFilter);
     } else {
       toast.error("Gagal generate tagihan");
     }
@@ -119,6 +121,14 @@ export default function TagihanPage() {
           <option value="belum_bayar">Belum Bayar</option>
           <option value="lunas">Lunas</option>
         </select>
+        <select
+          value={dueWithinFilter}
+          onChange={(e) => setDueWithinFilter(e.target.value)}
+          className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+        >
+          <option value="">Semua Jatuh Tempo</option>
+          <option value="3">3 Hari ke Depan</option>
+        </select>
       </div>
 
       {loading ? (
@@ -136,10 +146,9 @@ export default function TagihanPage() {
                 <tr>
                   <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">No. Invoice</th>
                   <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Pelanggan</th>
-                  <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Periode</th>
+                  <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Periode Billing</th>
                   <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Jumlah</th>
                   <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Jatuh Tempo</th>
-                  <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Batas Akhir</th>
                   <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Status</th>
                   <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Aksi</th>
                 </tr>
@@ -152,10 +161,9 @@ export default function TagihanPage() {
                       <div className="font-medium text-foreground">{bill.customerName}</div>
                       <div className="text-xs text-muted-foreground">{bill.customerPhone}</div>
                     </td>
-                    <td className="p-4 text-muted-foreground">{formatDate(bill.billPeriod)}</td>
+                    <td className="p-4 text-muted-foreground">{formatMonthYear(bill.dueDate)}</td>
                     <td className="p-4 font-medium text-foreground">{formatRupiah(bill.amount)}</td>
                     <td className="p-4 text-muted-foreground">{formatDate(bill.dueDate)}</td>
-                    <td className="p-4 text-muted-foreground">{formatDate(getBatasAkhir(bill.dueDate))}</td>
                     <td className="p-4">
                       <Badge variant={bill.status === "lunas" ? "default" : "destructive"} className={bill.status === "lunas" ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-50 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800"}>
                         {bill.status === "lunas" ? "Lunas" : "Belum Bayar"}
@@ -203,8 +211,8 @@ export default function TagihanPage() {
                   </div>
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                     <div>
+                      <span className="text-sm text-muted-foreground block">Periode: {formatMonthYear(bill.dueDate)}</span>
                       <span className="text-sm text-muted-foreground block">Jatuh tempo: {formatDate(bill.dueDate)}</span>
-                      <span className="text-xs text-muted-foreground block">Batas akhir: {formatDate(getBatasAkhir(bill.dueDate))}</span>
                     </div>
                     <span className="text-sm font-medium text-foreground">{formatRupiah(bill.amount)}</span>
                   </div>
@@ -236,7 +244,7 @@ export default function TagihanPage() {
 
           {bills.length === 0 && (
             <div className="text-center py-16 text-muted-foreground">
-              <p className="text-sm">{search || statusFilter ? "Tidak ada tagihan yang cocok." : "Belum ada tagihan. Klik \"Generate Tagihan\" untuk membuat tagihan bulan ini."}</p>
+              <p className="text-sm">{search || statusFilter || dueWithinFilter ? "Tidak ada tagihan yang cocok." : "Belum ada tagihan. Klik \"Generate Tagihan\" untuk membuat tagihan bulan ini."}</p>
             </div>
           )}
 
@@ -250,7 +258,7 @@ export default function TagihanPage() {
                   variant="outline"
                   size="sm"
                   disabled={pagination.page <= 1}
-                  onClick={() => fetchBills(pagination.page - 1, search, statusFilter)}
+                  onClick={() => fetchBills(pagination.page - 1, search, statusFilter, dueWithinFilter)}
                   className="border-border"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -262,7 +270,7 @@ export default function TagihanPage() {
                   variant="outline"
                   size="sm"
                   disabled={pagination.page >= pagination.totalPages}
-                  onClick={() => fetchBills(pagination.page + 1, search, statusFilter)}
+                  onClick={() => fetchBills(pagination.page + 1, search, statusFilter, dueWithinFilter)}
                   className="border-border"
                 >
                   <ChevronRight className="h-4 w-4" />

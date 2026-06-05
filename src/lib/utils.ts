@@ -88,3 +88,15 @@ export function getBatasAkhir(dueDateStr: string): string {
   if (Number.isNaN(y) || Number.isNaN(m)) return dueDateStr;
   return toLocalDateStr(new Date(y, m - 1, 27));
 }
+
+/** Format date string as "Bulan Tahun" (e.g., "Juni 2026"). */
+export function formatMonthYear(dateStr: string): string {
+  const parts = dateStr.split("-");
+  if (parts.length < 2) return dateStr;
+  const y = Number(parts[0]), m = Number(parts[1]);
+  if (Number.isNaN(y) || Number.isNaN(m)) return dateStr;
+  return new Date(y, m - 1, 1).toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  });
+}
