@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, UserX, UserCheck } from "lucide-react";
 import Link from "next/link";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, customerStatusLabel } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface Customer {
   id: string;
@@ -50,6 +51,30 @@ export default function PelangganPage() {
     setPagination(json.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
     setLoading(false);
   }, []);
+
+  async function handleToggleStatus(c: Customer, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const nextStatus = c.status === "aktif" ? "nonaktif" : "aktif";
+    const verb = nextStatus === "aktif" ? "Aktifkan" : "Nonaktifkan";
+    if (!confirm(`${verb} pelanggan "${c.name}"?`)) return;
+    try {
+      const res = await fetch(`/api/pelanggan/${c.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(`Pelanggan berhasil di${verb.toLowerCase()}`);
+        fetchCustomers(pagination.page, search);
+      } else {
+        toast.error(json.error || "Gagal mengubah status");
+      }
+    } catch {
+      toast.error("Gagal mengubah status: koneksi bermasalah");
+    }
+  }
 
   useEffect(() => {
     fetchCustomers(1, "");
@@ -125,13 +150,26 @@ export default function PelangganPage() {
                     <td className="p-4 font-medium text-foreground">{formatRupiah(c.monthlyPrice)}</td>
                     <td className="p-4">
                       <Badge variant={c.status === "aktif" ? "default" : "secondary"} className={c.status === "aktif" ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" : "bg-muted text-muted-foreground border border-border"}>
-                        {c.status}
+                        {customerStatusLabel(c.status)}
                       </Badge>
                     </td>
                     <td className="p-4">
-                      <Link href={`/pelanggan/${c.id}`}>
-                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Detail</Button>
-                      </Link>
+                      <div className="flex items-center gap-1">
+                        <Link href={`/pelanggan/${c.id}`}>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Detail</Button>
+                        </Link>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={c.status === "aktif" ? "Nonaktifkan" : "Aktifkan"}
+                            onClick={(e) => handleToggleStatus(c, e)}
+                            className={c.status === "aktif" ? "text-muted-foreground hover:text-destructive" : "text-muted-foreground hover:text-emerald-600"}
+                          >
+                            {c.status === "aktif" ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -152,12 +190,25 @@ export default function PelangganPage() {
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{c.address}</p>
                       </div>
                       <Badge variant={c.status === "aktif" ? "default" : "secondary"} className={`ml-2 ${c.status === "aktif" ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" : "bg-muted text-muted-foreground border border-border"}`}>
-                        {c.status}
+                        {customerStatusLabel(c.status)}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                       <span className="text-sm text-muted-foreground">{c.packageName} ({c.packageSpeed})</span>
-                      <span className="text-sm font-medium text-foreground">{formatRupiah(c.monthlyPrice)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">{formatRupiah(c.monthlyPrice)}</span>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={c.status === "aktif" ? "Nonaktifkan" : "Aktifkan"}
+                            onClick={(e) => handleToggleStatus(c, e)}
+                            className={c.status === "aktif" ? "text-muted-foreground hover:text-destructive" : "text-muted-foreground hover:text-emerald-600"}
+                          >
+                            {c.status === "aktif" ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

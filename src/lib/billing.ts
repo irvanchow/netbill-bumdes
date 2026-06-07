@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { bills, customers, internetPackages } from "@/lib/db/schema";
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import {
   generateInvoiceNumber,
   generateInstallationInvoiceNumber,
@@ -47,7 +47,7 @@ export async function generateMonthlyBills(period: Date) {
     .innerJoin(internetPackages, eq(customers.packageId, internetPackages.id))
     .where(
       and(
-        inArray(customers.status, ["aktif", "suspend"]),
+        eq(customers.status, "aktif"),
         sql`${customers.activationDate} IS NOT NULL`,
         sql`${customers.activationDate} <= ${cutoffStr}`
       )
@@ -115,7 +115,7 @@ export async function autoGenerateBills() {
     .innerJoin(internetPackages, eq(customers.packageId, internetPackages.id))
     .where(
       and(
-        inArray(customers.status, ["aktif", "suspend"]),
+        eq(customers.status, "aktif"),
         sql`${customers.activationDate} IS NOT NULL`
       )
     );
@@ -256,119 +256,50 @@ export async function generateInstallationBill(customerId: string) {
   return bill;
 }
 
-export async function updateCustomerStatuses() {
-  const results = await db
-    .select({
-      id: customers.id,
-      currentStatus: customers.status,
-      unpaidCount: sql<number>`count(${bills.id})::int`,
-    })
-    .from(customers)
-    .leftJoin(
-      bills,
-      and(
-        eq(bills.customerId, customers.id),
-        eq(bills.status, "belum_bayar")
-      )
-    )
-    .where(sql`${customers.activationDate} IS NOT NULL`)
-    .groupBy(customers.id, customers.status);
-
-  let toAktif = 0;
-  let toSuspend = 0;
-  let toNonaktif = 0;
-
-  for (const row of results) {
-    let newStatus: "aktif" | "suspend" | "nonaktif";
-
-    if (row.unpaidCount === 0) {
-      newStatus = "aktif";
-    } else if (row.unpaidCount === 1) {
-      newStatus = "suspend";
-    } else {
-      newStatus = "nonaktif";
-    }
-
-    if (newStatus !== row.currentStatus) {
-      await db
-        .update(customers)
-        .set({ status: newStatus, updatedAt: new Date() })
-        .where(eq(customers.id, row.id));
-
-      if (newStatus === "aktif") toAktif++;
-      else if (newStatus === "suspend") toSuspend++;
-      else toNonaktif++;
-    }
-  }
-
-  return { toAktif, toSuspend, toNonaktif };
-}
-
+/**
+ * Aktivasi otomatis saat tagihan instalasi dibayar.
+ *
+ * Aturan status (2 status): pelanggan AKTIF apabila sudah membayar biaya
+ * instalasi. Pembayaran tagihan bulanan TIDAK lagi mengubah status — tunggakan
+ * bulanan tidak menonaktifkan pelanggan. Penonaktifan/aktivasi lain dilakukan
+ * manual oleh admin (lihat PATCH /api/pelanggan/[id]).
+ */
 export async function updateCustomerStatusAfterPayment(customerId: string, billId: string) {
-  // Check if the paid bill is an installation bill
+  // Hanya tagihan instalasi yang memicu perubahan status.
   const [paidBill] = await db
     .select({ billType: bills.billType })
     .from(bills)
     .where(eq(bills.id, billId))
     .limit(1);
 
-  // Get current customer status
+  if (paidBill?.billType !== "instalasi") {
+    return null; // pembayaran bulanan: status tidak berubah
+  }
+
   const [customer] = await db
     .select({ status: customers.status, activationDate: customers.activationDate })
     .from(customers)
     .where(eq(customers.id, customerId))
     .limit(1);
 
-  // If installation bill paid and customer is "belum_aktif", set to "aktif"
-  if (paidBill?.billType === "instalasi" && customer?.status === "belum_aktif") {
+  // Jika belum aktif, aktifkan setelah instalasi lunas.
+  if (customer && customer.status !== "aktif") {
     await db
       .update(customers)
       .set({ status: "aktif", updatedAt: new Date() })
       .where(eq(customers.id, customerId));
 
-    // Prepaid: create the first monthly bill now, with a due date derived from
-    // the activation date. activationDate is a DB "date" string (YYYY-MM-DD);
-    // parse its parts manually and build a local Date — never new Date(string),
-    // which parses as UTC and can shift the day on the WITA (UTC+8) server.
+    // Prepaid: buat tagihan bulanan pertama, due date diturunkan dari tanggal
+    // aktivasi. activationDate adalah string DB "date" (YYYY-MM-DD); parse
+    // bagian-bagiannya manual dan bangun Date lokal — jangan new Date(string),
+    // yang di-parse sebagai UTC dan bisa menggeser hari di server WITA (UTC+8).
     if (customer.activationDate) {
       const [yy, mm, dd] = customer.activationDate.split("-").map(Number);
       if (!Number.isNaN(yy) && !Number.isNaN(mm) && !Number.isNaN(dd)) {
         await generateFirstBill(customerId, new Date(yy, mm - 1, dd));
       }
     }
-
-    return "aktif";
   }
 
-  // For monthly bills, count remaining unpaid monthly bills
-  const [result] = await db
-    .select({ unpaidCount: sql<number>`count(*)::int` })
-    .from(bills)
-    .where(
-      and(
-        eq(bills.customerId, customerId),
-        eq(bills.status, "belum_bayar"),
-        eq(bills.billType, "bulanan")
-      )
-    );
-
-  let newStatus: "belum_aktif" | "aktif" | "suspend" | "nonaktif";
-  const unpaidCount = result?.unpaidCount ?? 0;
-
-  if (customer?.status === "belum_aktif") {
-    newStatus = "belum_aktif";
-  } else if (unpaidCount === 0) {
-    newStatus = "aktif";
-  } else if (unpaidCount === 1) {
-    newStatus = "suspend";
-  } else {
-    newStatus = "nonaktif";
-  }
-
-  await db
-    .update(customers)
-    .set({ status: newStatus, updatedAt: new Date() })
-    .where(eq(customers.id, customerId));
-
-  return newStatus;
+  return "aktif";
 }

@@ -126,3 +126,31 @@ export async function DELETE(
 
   return NextResponse.json({ data: updated });
 }
+
+// Toggle status pelanggan secara manual (admin): aktif <-> nonaktif.
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { id } = await params;
+  const body = await request.json().catch(() => ({}));
+  const status = body.status;
+
+  if (status !== "aktif" && status !== "nonaktif") {
+    return NextResponse.json({ error: "Status tidak valid" }, { status: 400 });
+  }
+
+  const [updated] = await db
+    .update(customers)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(customers.id, id))
+    .returning();
+
+  if (!updated) return NextResponse.json({ error: "Pelanggan tidak ditemukan" }, { status: 404 });
+
+  return NextResponse.json({ data: updated });
+}

@@ -10,9 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, UserX, UserCheck } from "lucide-react";
 import Link from "next/link";
-import { formatRupiah, formatDate, formatDateTime } from "@/lib/utils";
+import { formatRupiah, formatDate, formatDateTime, customerStatusLabel } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { LocationPicker } from "@/components/location-picker";
 import { LocationMap } from "@/components/location-map";
@@ -135,6 +135,29 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
     setLoading(false);
   }
 
+  async function handleToggleStatus() {
+    if (!customer) return;
+    const nextStatus = customer.status === "aktif" ? "nonaktif" : "aktif";
+    const verb = nextStatus === "aktif" ? "Aktifkan" : "Nonaktifkan";
+    if (!confirm(`${verb} pelanggan "${customer.name}"?`)) return;
+    try {
+      const res = await fetch(`/api/pelanggan/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(`Pelanggan berhasil di${verb.toLowerCase()}`);
+        setCustomer((prev) => (prev ? { ...prev, status: nextStatus } : prev));
+      } else {
+        toast.error(json.error || "Gagal mengubah status");
+      }
+    } catch {
+      toast.error("Gagal mengubah status: koneksi bermasalah");
+    }
+  }
+
   if (!customer) {
     return <div className="animate-pulse p-4">Memuat...</div>;
   }
@@ -155,7 +178,7 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{customer.name}</CardTitle>
             <Badge variant={customer.status === "aktif" ? "default" : "secondary"}>
-              {customer.status}
+              {customerStatusLabel(customer.status)}
             </Badge>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -228,10 +251,29 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
               </div>
             )}
             {isAdmin && (
-              <Button onClick={() => setEditing(true)} variant="outline" className="mt-4 border-border">
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
+              <div className="flex items-center gap-2 mt-4">
+                <Button onClick={() => setEditing(true)} variant="outline" className="border-border">
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  onClick={handleToggleStatus}
+                  variant="outline"
+                  className={customer.status === "aktif" ? "border-border text-destructive hover:text-destructive" : "border-border text-emerald-600 hover:text-emerald-600"}
+                >
+                  {customer.status === "aktif" ? (
+                    <>
+                      <UserX className="h-4 w-4 mr-2" />
+                      Nonaktifkan
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Aktifkan
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

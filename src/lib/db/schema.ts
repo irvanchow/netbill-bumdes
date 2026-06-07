@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["admin", "collector"]);
-export const customerStatusEnum = pgEnum("customer_status", ["belum_aktif", "aktif", "suspend", "nonaktif"]);
+export const customerStatusEnum = pgEnum("customer_status", ["aktif", "nonaktif"]);
 export const billStatusEnum = pgEnum("bill_status", ["belum_bayar", "lunas"]);
 export const billTypeEnum = pgEnum("bill_type", ["bulanan", "instalasi"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["tunai", "transfer"]);
@@ -58,7 +58,7 @@ export const customers = pgTable("customers", {
   activationDate: date("activation_date"),
   latitude: numeric("latitude", { precision: 10, scale: 7 }),
   longitude: numeric("longitude", { precision: 10, scale: 7 }),
-  status: customerStatusEnum("status").default("belum_aktif").notNull(),
+  status: customerStatusEnum("status").default("nonaktif").notNull(),
   assignedCollectorId: uuid("assigned_collector_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

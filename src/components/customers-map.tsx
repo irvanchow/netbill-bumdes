@@ -16,16 +16,12 @@ interface CustomerLocation {
 
 const statusColors: Record<string, string> = {
   aktif: "#10b981",
-  suspend: "#f59e0b",
   nonaktif: "#ef4444",
-  belum_aktif: "#6b7280",
 };
 
 const statusLabels: Record<string, string> = {
   aktif: "Aktif",
-  suspend: "Suspend",
-  nonaktif: "Non Aktif",
-  belum_aktif: "Belum Aktif",
+  nonaktif: "Tidak Aktif",
 };
 
 function createIcon(status: string) {

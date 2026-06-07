@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { autoGenerateBills, updateCustomerStatuses } from "@/lib/billing";
+import { autoGenerateBills } from "@/lib/billing";
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -10,11 +10,9 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await autoGenerateBills();
-  const statusResult = await updateCustomerStatuses();
 
   return NextResponse.json({
     message: "Auto-generated tagihan berhasil",
     ...result,
-    statusUpdates: statusResult,
   });
 }

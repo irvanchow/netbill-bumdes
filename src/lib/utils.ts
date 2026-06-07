@@ -53,6 +53,11 @@ export function toLocalDateStr(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Label tampilan status pelanggan: hanya 2 status (aktif / tidak aktif). */
+export function customerStatusLabel(status: string): string {
+  return status === "aktif" ? "Aktif" : "Tidak Aktif";
+}
+
 /** Prefix nomor invoice tagihan bulanan untuk suatu bulan, mis. "INV-202606-". */
 export function invoicePrefix(period: Date): string {
   const year = period.getFullYear();

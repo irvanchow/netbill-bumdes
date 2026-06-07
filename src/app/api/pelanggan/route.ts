@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (status === "aktif" || status === "nonaktif" || status === "suspend" || status === "belum_aktif") {
+  if (status === "aktif" || status === "nonaktif") {
     conditions.push(eq(customers.status, status));
   }
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         latitude: parsed.data.latitude ? String(parsed.data.latitude) : null,
         longitude: parsed.data.longitude ? String(parsed.data.longitude) : null,
         assignedCollectorId: parsed.data.assignedCollectorId || null,
-        status: "belum_aktif",
+        status: "nonaktif",
       })
       .returning();
 

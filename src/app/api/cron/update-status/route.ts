@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateCustomerStatuses } from "@/lib/billing";
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -9,10 +8,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = await updateCustomerStatuses();
-
+  // No-op: status pelanggan kini berbasis event (pembayaran instalasi atau aksi
+  // manual admin), bukan lagi dihitung dari tunggakan. Endpoint dipertahankan
+  // agar crontab server tetap valid.
   return NextResponse.json({
-    message: "Status pelanggan berhasil diupdate",
-    ...result,
+    message: "Status pelanggan kini berbasis event; tidak ada pembaruan terjadwal.",
   });
 }
