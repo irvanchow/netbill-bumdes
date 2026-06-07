@@ -105,7 +105,7 @@ export function buildReceiptText(data: ReceiptData): string {
     sep,
     `Collector   : ${data.collectorName}`,
     dSep,
-    "Terima kasih atas pembayaran Anda.",
+    "Terima kasih atas pembayaran Anda. Simpan struk/chat ini sebagai bukti pembayaran yang sah.",
     dSep,
   ].join("\n");
 }
@@ -154,8 +154,10 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
 
   // Footer
   parts.push(ALIGN_CENTER);
-  parts.push(line("Terima kasih atas"));
-  parts.push(line("pembayaran Anda."));
+  parts.push(line("Terima kasih atas"))
+  parts.push(line("pembayaran Anda."))
+  parts.push(line("Simpan struk ini sebagai"))
+  parts.push(line("bukti pembayaran yang sah."))
   parts.push(doubleSeparator());
 
   // Feed and cut
