@@ -80,7 +80,7 @@ function formatRupiahPlain(amount: number): string {
 export function buildReceiptText(data: ReceiptData): string {
   const sep = "--------------------------------";
   const dSep = "================================";
-  const keterangan = data.billType === "instalasi" ? "Biaya Instalasi" : "Biaya Internet";
+  const keterangan = data.billType === "instalasi" ? "Biaya Instalasi" : "Langganan Internet";
   const metode = data.paymentMethod === "tunai" ? "Tunai" : "Transfer";
   const jumlah = formatRupiahPlain(data.amount);
 
@@ -145,7 +145,7 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
   parts.push(line(padRight("Tagihan     :", formatRupiahPlain(data.amount))));
   parts.push(line(padRight("Dibayar     :", formatRupiahPlain(data.amount))));
   parts.push(line(`Metode      : ${data.paymentMethod === "tunai" ? "Tunai" : "Transfer"}`));
-  parts.push(line(`Keterangan  : ${data.billType === "instalasi" ? "Biaya Instalasi" : "Biaya Internet"}`));
+  parts.push(line(`Keterangan  : ${data.billType === "instalasi" ? "Biaya Instalasi" : "Langganan Internet"}`));
   parts.push(separator());
 
   // Collector
