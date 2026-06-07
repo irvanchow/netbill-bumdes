@@ -115,7 +115,7 @@ export default function RekapTagihanDetailPage() {
           <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1">{summary.paid}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-5">
-          <p className="text-sm text-muted-foreground">Belum Bayar</p>
+          <p className="text-sm text-muted-foreground">Belum Lunas</p>
           <p className="text-2xl font-semibold text-rose-600 dark:text-rose-400 mt-1">{summary.unpaid}</p>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function RekapTagihanDetailPage() {
               >
                 <option value="">Semua</option>
                 <option value="lunas">Lunas</option>
-                <option value="belum_bayar">Belum Bayar</option>
+                <option value="belum_bayar">Belum Lunas</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -214,7 +214,7 @@ export default function RekapTagihanDetailPage() {
                           : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-50 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800"
                         }
                       >
-                        {item.status === "lunas" ? "Lunas" : "Belum Bayar"}
+                        {item.status === "lunas" ? "Lunas" : "Belum Lunas"}
                       </Badge>
                     </td>
                     <td className="p-4 text-muted-foreground">{item.paymentDate ? formatDate(item.paymentDate) : "-"}</td>
@@ -242,7 +242,7 @@ export default function RekapTagihanDetailPage() {
                         : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-50 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800"
                       }
                     >
-                      {item.status === "lunas" ? "Lunas" : "Belum Bayar"}
+                      {item.status === "lunas" ? "Lunas" : "Belum Lunas"}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">

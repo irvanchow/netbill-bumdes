@@ -161,7 +161,7 @@ export function RekapTagihanDetailDocument({ data }: { data: DetailData }) {
 
         <Text style={styles.title}>Detail Tagihan - {formatPeriod(data.period)}</Text>
         <Text style={styles.period}>
-          Total: {data.summary.total} | Lunas: {data.summary.paid} | Belum Bayar: {data.summary.unpaid}
+          Total: {data.summary.total} | Lunas: {data.summary.paid} | Belum Lunas: {data.summary.unpaid}
         </Text>
 
         <View style={styles.table}>
@@ -184,7 +184,7 @@ export function RekapTagihanDetailDocument({ data }: { data: DetailData }) {
               <Text style={[styles.cellText, styles.colInvoice]}>{row.invoiceNumber}</Text>
               <Text style={[styles.cellText, styles.colAmount]}>{formatRupiahPdf(row.amount)}</Text>
               <Text style={[row.status === "lunas" ? styles.cellGreen : styles.cellRed, styles.colStatus]}>
-                {row.status === "lunas" ? "Lunas" : "Belum Bayar"}
+                {row.status === "lunas" ? "Lunas" : "Belum Lunas"}
               </Text>
               <Text style={[styles.cellText, styles.colDate]}>{row.paymentDate ? formatDatePdf(row.paymentDate) : "-"}</Text>
               <Text style={[styles.cellText, styles.colCollector]}>{row.collectorName || "-"}</Text>
@@ -193,7 +193,7 @@ export function RekapTagihanDetailDocument({ data }: { data: DetailData }) {
 
           <View style={styles.summaryRow}>
             <Text style={styles.summaryText}>
-              Total: {data.rows.length} pelanggan | Lunas: {data.summary.paid} | Belum Bayar: {data.summary.unpaid}
+              Total: {data.rows.length} pelanggan | Lunas: {data.summary.paid} | Belum Lunas: {data.summary.unpaid}
             </Text>
           </View>
         </View>

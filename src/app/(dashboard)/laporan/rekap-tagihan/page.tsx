@@ -150,7 +150,7 @@ export default function RekapTagihanPage() {
           <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1">{summary.paidBills}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-5">
-          <p className="text-sm text-muted-foreground">Belum Bayar</p>
+          <p className="text-sm text-muted-foreground">Belum Lunas</p>
           <p className="text-2xl font-semibold text-rose-600 dark:text-rose-400 mt-1">{summary.unpaidBills}</p>
         </div>
         <div className="bg-card rounded-xl border border-border p-5">
@@ -172,7 +172,7 @@ export default function RekapTagihanPage() {
                   <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Periode</th>
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Total</th>
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Lunas</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Belum Bayar</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Belum Lunas</th>
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Nominal Total</th>
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Terbayar</th>
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Belum Terbayar</th>
