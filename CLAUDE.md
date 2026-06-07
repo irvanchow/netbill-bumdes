@@ -55,7 +55,7 @@
 ## Cetak Struk
 - Bluetooth thermal printer 58mm (32 char/baris) — pakai komponen `PrintReceiptButton` (single) atau `PrintMultiReceiptButton` (multi)
 - WhatsApp: kirim text plain via `wa.me/<phone>?text=...`, builder `buildReceiptText` / `buildMultiReceiptText`
-- Header struk: nama app dari settings, alamat: "Desa Jelijih Punggang"
+- Header struk: nama app dari settings, alamat: `BumDesa "GIRI MANDALA"`
 - Footer: "Simpan struk ini sebagai bukti pembayaran yang sah."
 
 ## Naming

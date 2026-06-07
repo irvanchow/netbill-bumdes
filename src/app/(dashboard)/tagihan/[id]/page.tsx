@@ -197,7 +197,7 @@ export default function TagihanDetailPage({ params }: { params: Promise<{ id: st
                   size="sm"
                   receiptData={{
                     appName: "Bill BumdesNET",
-                    address: "Desa Jelijih Punggang",
+                    address: "BumDesa \"GIRI MANDALA\"",
                     transactionCode: bill.payments[0].transactionCode,
                     invoiceNumber: bill.invoiceNumber,
                     paymentDate: bill.payments[0].paymentDate.split("-").reverse().join("-"),

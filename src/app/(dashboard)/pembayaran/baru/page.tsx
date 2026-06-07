@@ -237,7 +237,7 @@ function CatatPembayaranForm() {
     const isMulti = successPayments.length > 1;
     const multiData = {
       appName: "Bill BumdesNET",
-      address: "Desa Jelijah Punggang",
+      address: "BumDesa \"GIRI MANDALA\"",
       transactionCode,
       paymentDate: paidDate.split("-").reverse().join("-"),
       paymentTime: paidTime.slice(0, 5),
@@ -310,7 +310,7 @@ function CatatPembayaranForm() {
                     <PrintReceiptButton
                       receiptData={{
                         appName: "Bill BumdesNET",
-                        address: "Desa Jelijih Punggang",
+                        address: "BumDesa \"GIRI MANDALA\"",
                         transactionCode,
                         invoiceNumber: primaryBill.invoiceNumber,
                         paymentDate: paidDate.split("-").reverse().join("-"),
@@ -331,7 +331,7 @@ function CatatPembayaranForm() {
                         href={`https://wa.me/${primaryBill.customerPhone.replace(/^0/, "62").replace(/\D/g, "")}?text=${encodeURIComponent(
                           buildReceiptText({
                             appName: "Bill BumdesNET",
-                            address: "Desa Jelijah Punggang",
+                            address: "BumDesa \"GIRI MANDALA\"",
                             transactionCode,
                             invoiceNumber: primaryBill.invoiceNumber,
                             paymentDate: paidDate.split("-").reverse().join("-"),
