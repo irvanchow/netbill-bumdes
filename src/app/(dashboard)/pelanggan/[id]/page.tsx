@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, UserX, UserCheck } from "lucide-react";
+import { ArrowLeft, Pencil, UserX, UserCheck, CalendarPlus } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah, formatDate, formatDateTime, customerStatusLabel } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LocationPicker } from "@/components/location-picker";
 import { LocationMap } from "@/components/location-map";
 import { ShareLocationButton } from "@/components/share-location-button";
@@ -76,6 +77,9 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const isAdmin = session?.user?.role === "admin";
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [generateMonths, setGenerateMonths] = useState(3);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     fetch(`/api/pelanggan/${id}`)
@@ -158,6 +162,27 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
     }
   }
 
+  async function handleGenerateTagihan() {
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/pelanggan/${id}/generate-tagihan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ months: generateMonths }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(`${json.generated} tagihan dibuat, ${json.skipped} sudah ada`);
+        setGenerateDialogOpen(false);
+      } else {
+        toast.error(json.error || "Gagal generate tagihan");
+      }
+    } catch {
+      toast.error("Gagal generate tagihan: koneksi bermasalah");
+    }
+    setGenerating(false);
+  }
+
   if (!customer) {
     return <div className="animate-pulse p-4">Memuat...</div>;
   }
@@ -174,6 +199,7 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
       </div>
 
       {!editing ? (
+        <>
         <Card className="max-w-lg">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{customer.name}</CardTitle>
@@ -251,7 +277,7 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
               </div>
             )}
             {isAdmin && (
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
                 <Button onClick={() => setEditing(true)} variant="outline" className="border-border">
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
@@ -273,10 +299,48 @@ export default function DetailPelangganPage({ params }: { params: Promise<{ id: 
                     </>
                   )}
                 </Button>
+                <Button
+                  onClick={() => { setGenerateMonths(3); setGenerateDialogOpen(true); }}
+                  variant="outline"
+                  className="border-border"
+                >
+                  <CalendarPlus className="h-4 w-4 mr-2" />
+                  Generate Tagihan
+                </Button>
               </div>
             )}
           </CardContent>
         </Card>
+
+        <Dialog open={generateDialogOpen} onOpenChange={(open) => !generating && setGenerateDialogOpen(open)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Generate Tagihan</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Pelanggan: <span className="text-foreground font-medium">{customer.name}</span>
+              </p>
+              <div className="space-y-2">
+                <label htmlFor="genMonthsDetail" className="text-sm font-medium text-foreground">Jumlah Bulan</label>
+                <input
+                  id="genMonthsDetail"
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={generateMonths}
+                  onChange={(e) => setGenerateMonths(Math.max(1, Math.min(12, Number(e.target.value) || 1)))}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+                />
+                <p className="text-xs text-muted-foreground">Tagihan yang sudah ada akan dilewati otomatis.</p>
+              </div>
+              <Button onClick={handleGenerateTagihan} disabled={generating} className="w-full">
+                {generating ? "Memproses..." : "Generate"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        </>
       ) : (
         <Card className="max-w-lg">
           <CardContent className="pt-6">

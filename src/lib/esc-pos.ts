@@ -168,3 +168,117 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
 
   return concat(...parts);
 }
+
+export interface MultiReceiptBillItem {
+  invoiceNumber: string;
+  period: string;
+  amount: number;
+}
+
+export interface MultiReceiptData {
+  appName: string;
+  address: string;
+  transactionCode: string;
+  paymentDate: string;
+  paymentTime: string;
+  customerName: string;
+  customerAddress: string;
+  packageName: string;
+  paymentMethod: string;
+  collectorName: string;
+  bills: MultiReceiptBillItem[];
+  totalAmount: number;
+}
+
+export function buildMultiReceipt(data: MultiReceiptData): Uint8Array {
+  const parts: Uint8Array[] = [];
+
+  parts.push(INIT);
+
+  // Header
+  parts.push(ALIGN_CENTER);
+  parts.push(doubleSeparator());
+  parts.push(BOLD_ON);
+  parts.push(DOUBLE_HEIGHT_ON);
+  parts.push(line(data.appName));
+  parts.push(NORMAL_SIZE);
+  parts.push(BOLD_OFF);
+  parts.push(line(data.address));
+  parts.push(doubleSeparator());
+
+  // Invoice info
+  parts.push(ALIGN_LEFT);
+  parts.push(line(`Kode Trx    : ${data.transactionCode}`));
+  parts.push(line(`Tanggal     : ${data.paymentDate} ${data.paymentTime}`));
+  parts.push(separator());
+
+  // Customer info
+  parts.push(line(`Pelanggan   : ${data.customerName}`));
+  parts.push(line(`Alamat      : ${data.customerAddress}`));
+  parts.push(line(`Paket       : ${data.packageName}`));
+  parts.push(separator());
+
+  // Per-bill rows
+  for (const bill of data.bills) {
+    const shortInv = bill.invoiceNumber.slice(-9); // mis. "-0001" bagian akhir
+    parts.push(line(padRight(`${shortInv} ${bill.period}`, formatRupiahPlain(bill.amount))));
+  }
+  parts.push(separator());
+  parts.push(BOLD_ON);
+  parts.push(line(padRight("Total       :", formatRupiahPlain(data.totalAmount))));
+  parts.push(BOLD_OFF);
+  parts.push(line(`Metode      : ${data.paymentMethod === "tunai" ? "Tunai" : "Transfer"}`));
+  parts.push(separator());
+
+  // Collector
+  parts.push(line(`Collector   : ${data.collectorName}`));
+  parts.push(doubleSeparator());
+
+  // Footer
+  parts.push(ALIGN_CENTER);
+  parts.push(line("Terima kasih atas"))
+  parts.push(line("pembayaran Anda."))
+  parts.push(line("Simpan struk ini sebagai"))
+  parts.push(line("bukti pembayaran yang sah."))
+  parts.push(doubleSeparator());
+
+  parts.push(FEED_LINE);
+  parts.push(FEED_LINE);
+  parts.push(FEED_LINE);
+  parts.push(CUT);
+
+  return concat(...parts);
+}
+
+export function buildMultiReceiptText(data: MultiReceiptData): string {
+  const sep = "--------------------------------";
+  const dSep = "================================";
+  const metode = data.paymentMethod === "tunai" ? "Tunai" : "Transfer";
+
+  const billLines = data.bills
+    .map((b) => `${b.invoiceNumber}  ${b.period} : ${formatRupiahPlain(b.amount)}`)
+    .join("\n");
+
+  return [
+    dSep,
+    `*${data.appName}*`,
+    data.address,
+    dSep,
+    `Kode Trx    : ${data.transactionCode}`,
+    `Tanggal     : ${data.paymentDate} ${data.paymentTime}`,
+    sep,
+    `Pelanggan   : ${data.customerName}`,
+    `Alamat      : ${data.customerAddress}`,
+    `Paket       : ${data.packageName}`,
+    sep,
+    billLines,
+    sep,
+    `*Total       : ${formatRupiahPlain(data.totalAmount)}*`,
+    `Metode      : ${metode}`,
+    sep,
+    `Collector   : ${data.collectorName}`,
+    dSep,
+    "Terima kasih atas pembayaran Anda. Simpan struk/chat ini sebagai bukti pembayaran yang sah.",
+    dSep,
+  ].join("\n");
+}

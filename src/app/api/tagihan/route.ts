@@ -17,12 +17,17 @@ export async function GET(request: NextRequest) {
   const period = searchParams.get("period") || "";
   const dueWithin = searchParams.get("due_within") || "";
   const search = searchParams.get("search") || "";
+  const customerId = searchParams.get("customerId") || "";
   const offset = (page - 1) * limit;
 
   const conditions = [];
 
   if (session.user.role === "collector") {
     conditions.push(eq(customers.assignedCollectorId, session.user.id));
+  }
+
+  if (customerId) {
+    conditions.push(eq(bills.customerId, customerId));
   }
 
   if (status === "belum_bayar" || status === "lunas") {

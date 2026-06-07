@@ -65,6 +65,93 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+
+  // ── Multi-bill path ──────────────────────────────────────────────────────
+  if (Array.isArray(body.billIds) && body.billIds.length > 1) {
+    const { billIds, paymentDate, paymentMethod, proofImageUrl, notes } = body;
+
+    if (!paymentDate || !paymentMethod) {
+      return NextResponse.json({ error: "Tanggal dan metode bayar wajib diisi" }, { status: 400 });
+    }
+
+    // Ambil semua tagihan sekaligus
+    const billList = await db
+      .select({ id: bills.id, customerId: bills.customerId, amount: bills.amount, status: bills.status, billType: bills.billType, billPeriod: bills.billPeriod, invoiceNumber: bills.invoiceNumber })
+      .from(bills)
+      .where(sql`${bills.id} = ANY(${billIds})`);
+
+    if (billList.length !== billIds.length) {
+      return NextResponse.json({ error: "Satu atau lebih tagihan tidak ditemukan" }, { status: 404 });
+    }
+    if (billList.some((b) => b.status === "lunas")) {
+      return NextResponse.json({ error: "Satu atau lebih tagihan sudah lunas" }, { status: 400 });
+    }
+    const uniqueCustomers = new Set(billList.map((b) => b.customerId));
+    if (uniqueCustomers.size > 1) {
+      return NextResponse.json({ error: "Semua tagihan harus milik pelanggan yang sama" }, { status: 400 });
+    }
+
+    const totalAmount = billList.reduce((s, b) => s + b.amount, 0);
+
+    // Generate base transaction code
+    const today = new Date();
+    const witaDate = new Date(today.toLocaleString("en-US", { timeZone: "Asia/Makassar" }));
+    const dateStr = witaDate.getFullYear().toString() +
+      String(witaDate.getMonth() + 1).padStart(2, "0") +
+      String(witaDate.getDate()).padStart(2, "0");
+    const timeStr = String(witaDate.getHours()).padStart(2, "0") + ":" +
+      String(witaDate.getMinutes()).padStart(2, "0") + ":" +
+      String(witaDate.getSeconds()).padStart(2, "0");
+    const prefix = `TRX-${dateStr}-`;
+
+    const [lastTrx] = await db
+      .select({ transactionCode: payments.transactionCode })
+      .from(payments)
+      .where(like(payments.transactionCode, `${prefix}%`))
+      .orderBy(desc(payments.transactionCode))
+      .limit(1);
+
+    // Ambil nomor tertinggi dari hari ini (termasuk suffix -N)
+    const lastNumRaw = lastTrx ? lastTrx.transactionCode.replace(prefix, "").split("-")[0] : "0";
+    const baseNum = parseInt(lastNumRaw) + 1;
+    const baseCode = `${prefix}${String(baseNum).padStart(4, "0")}`;
+
+    // Insert satu payment per tagihan dengan suffix -1, -2, dst.
+    const createdPayments = [];
+    for (let i = 0; i < billList.length; i++) {
+      const bill = billList[i];
+      const trxCode = `${baseCode}-${i + 1}`;
+      await db.insert(payments).values({
+        transactionCode: trxCode,
+        billId: bill.id,
+        amountPaid: bill.amount,
+        paymentDate,
+        paymentTime: timeStr,
+        paymentMethod,
+        collectorId: session.user.id,
+        proofImageUrl: proofImageUrl || null,
+        notes: notes || null,
+      });
+      await db.update(bills).set({ status: "lunas", updatedAt: new Date() }).where(eq(bills.id, bill.id));
+      createdPayments.push({ transactionCode: trxCode, billId: bill.id, invoiceNumber: bill.invoiceNumber, billPeriod: bill.billPeriod, amount: bill.amount });
+    }
+
+    // Update customer status (cukup panggil sekali untuk instalasi)
+    const installationBill = billList.find((b) => b.billType === "instalasi");
+    if (installationBill) {
+      await updateCustomerStatusAfterPayment(installationBill.customerId, installationBill.id);
+    }
+
+    return NextResponse.json({
+      multi: true,
+      transactionCode: baseCode,
+      paymentTime: timeStr,
+      totalAmount,
+      payments: createdPayments,
+    }, { status: 201 });
+  }
+
+  // ── Single-bill path (backward-compatible) ───────────────────────────────
   const parsed = pembayaranSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });

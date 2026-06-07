@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Search, ChevronLeft, ChevronRight, UserX, UserCheck } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Plus, Search, ChevronLeft, ChevronRight, UserX, UserCheck, CalendarPlus } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah, customerStatusLabel } from "@/lib/utils";
 import { useSession } from "next-auth/react";
@@ -39,6 +41,9 @@ export default function PelangganPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const isAdmin = session?.user?.role === "admin";
+  const [generateDialog, setGenerateDialog] = useState<{ open: boolean; customer: Customer | null }>({ open: false, customer: null });
+  const [generateMonths, setGenerateMonths] = useState(3);
+  const [generating, setGenerating] = useState(false);
 
   const fetchCustomers = useCallback(async (page: number, searchQuery: string) => {
     setLoading(true);
@@ -74,6 +79,28 @@ export default function PelangganPage() {
     } catch {
       toast.error("Gagal mengubah status: koneksi bermasalah");
     }
+  }
+
+  async function handleGenerateTagihan() {
+    if (!generateDialog.customer) return;
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/pelanggan/${generateDialog.customer.id}/generate-tagihan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ months: generateMonths }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(`${json.generated} tagihan dibuat, ${json.skipped} sudah ada`);
+        setGenerateDialog({ open: false, customer: null });
+      } else {
+        toast.error(json.error || "Gagal generate tagihan");
+      }
+    } catch {
+      toast.error("Gagal generate tagihan: koneksi bermasalah");
+    }
+    setGenerating(false);
   }
 
   useEffect(() => {
@@ -169,6 +196,22 @@ export default function PelangganPage() {
                             {c.status === "aktif" ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                           </Button>
                         )}
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Generate Tagihan"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setGenerateMonths(3);
+                              setGenerateDialog({ open: true, customer: c });
+                            }}
+                            className="text-muted-foreground hover:text-primary"
+                          >
+                            <CalendarPlus className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -206,6 +249,22 @@ export default function PelangganPage() {
                             className={c.status === "aktif" ? "text-muted-foreground hover:text-destructive" : "text-muted-foreground hover:text-emerald-600"}
                           >
                             {c.status === "aktif" ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                          </Button>
+                        )}
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Generate Tagihan"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setGenerateMonths(3);
+                              setGenerateDialog({ open: true, customer: c });
+                            }}
+                            className="text-muted-foreground hover:text-primary"
+                          >
+                            <CalendarPlus className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -255,6 +314,35 @@ export default function PelangganPage() {
           )}
         </>
       )}
+
+      <Dialog open={generateDialog.open} onOpenChange={(open) => !generating && setGenerateDialog({ open, customer: open ? generateDialog.customer : null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Tagihan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Pelanggan: <span className="text-foreground font-medium">{generateDialog.customer?.name}</span>
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="generateMonths">Jumlah Bulan</Label>
+              <Input
+                id="generateMonths"
+                type="number"
+                min={1}
+                max={12}
+                value={generateMonths}
+                onChange={(e) => setGenerateMonths(Math.max(1, Math.min(12, Number(e.target.value) || 1)))}
+                className="bg-card border-border"
+              />
+              <p className="text-xs text-muted-foreground">Tagihan yang sudah ada akan dilewati otomatis.</p>
+            </div>
+            <Button onClick={handleGenerateTagihan} disabled={generating} className="w-full">
+              {generating ? "Memproses..." : "Generate"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
