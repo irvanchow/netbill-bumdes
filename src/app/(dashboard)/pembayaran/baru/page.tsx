@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Upload, Camera, X, CheckCircle, MessageCircle, CalendarPlus, Trash2 } from "lucide-react";
+import { ArrowLeft, Upload, Camera, X, CheckCircle, MessageCircle, CalendarPlus, Trash2, Search } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah, formatDate, formatBillingPeriod } from "@/lib/utils";
 import { PrintReceiptButton } from "@/components/print-receipt-button";
@@ -44,6 +44,7 @@ function CatatPembayaranForm() {
   const [loading, setLoading] = useState(false);
   const [unpaidBills, setUnpaidBills] = useState<Bill[]>([]);
   const [selectedBills, setSelectedBills] = useState<Bill[]>([]);
+  const [billSearch, setBillSearch] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("tunai");
   const [proofImageUrl, setProofImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -57,6 +58,16 @@ function CatatPembayaranForm() {
 
   const primaryBill = selectedBills[0] ?? null;
   const totalAmount = selectedBills.reduce((s, b) => s + b.amount, 0);
+
+  const filteredBills = billSearch.trim()
+    ? unpaidBills.filter((b) => {
+        const q = billSearch.toLowerCase();
+        return (
+          b.customerName.toLowerCase().includes(q) ||
+          b.invoiceNumber.toLowerCase().includes(q)
+        );
+      })
+    : unpaidBills;
 
   useEffect(() => {
     fetch("/api/tagihan?status=belum_bayar&limit=100")
@@ -379,20 +390,34 @@ function CatatPembayaranForm() {
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="billId">Tagihan</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Cari nama pelanggan atau invoice..."
+                    value={billSearch}
+                    onChange={(e) => setBillSearch(e.target.value)}
+                    className="pl-9 bg-card border-border"
+                  />
+                </div>
                 <select
                   id="billId"
                   required={selectedBills.length === 0}
                   defaultValue={preselectedBillId}
                   onChange={(e) => handleBillChange(e.target.value)}
+                  size={Math.min(8, Math.max(4, filteredBills.length + 1))}
                   className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
                 >
                   <option value="">Pilih tagihan...</option>
-                  {unpaidBills.map((bill) => (
+                  {filteredBills.map((bill) => (
                     <option key={bill.id} value={bill.id}>
                       {bill.customerName} - {bill.invoiceNumber} ({formatRupiah(bill.amount)})
                     </option>
                   ))}
                 </select>
+                {billSearch && filteredBills.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Tidak ada tagihan yang cocok dengan pencarian.</p>
+                )}
               </div>
             )}
 
