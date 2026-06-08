@@ -208,16 +208,13 @@ export default function ShareRevenuePage() {
             <table className="w-full text-sm">
               <thead className="border-b border-border">
                 <tr>
-                  <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground" rowSpan={2}>Periode</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground" rowSpan={2}>Pendapatan Instalasi</th>
-                  <th className="text-center p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground" colSpan={2}>Pendapatan Berlangganan</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground" rowSpan={2}>Bagi Hasil ISP</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground" rowSpan={2}>Bagi Hasil BumDesa</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground" rowSpan={2}>Total Pendapatan</th>
-                </tr>
-                <tr>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Fiber Optik</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Wireless Broadband</th>
+                  <th className="text-left p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Periode</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Pendapatan Instalasi</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Berlangganan FO</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Berlangganan WB</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Bagi Hasil ISP</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Bagi Hasil BumDesa</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Total Pendapatan</th>
                 </tr>
               </thead>
               <tbody>
