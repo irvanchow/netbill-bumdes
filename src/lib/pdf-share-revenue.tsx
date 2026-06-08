@@ -234,11 +234,11 @@ export function ShareRevenueDocument({ data }: { data: ShareRevenueData }) {
             <Text style={styles.summaryValue}>{fmt(summary.totalRevenue)}</Text>
           </View>
           <View style={[styles.summaryCard, { borderColor: "#bfdbfe" }]}>
-            <Text style={styles.summaryLabel}>Bagian ISP</Text>
+            <Text style={styles.summaryLabel}>Bagi Hasil ISP</Text>
             <Text style={[styles.summaryValue, { color: "#2563eb" }]}>{fmt(summary.totalIsp)}</Text>
           </View>
           <View style={[styles.summaryCard, { borderColor: "#a7f3d0" }]}>
-            <Text style={styles.summaryLabel}>Bagian BumDesa</Text>
+            <Text style={styles.summaryLabel}>Bagi Hasil BumDesa</Text>
             <Text style={[styles.summaryValue, { color: "#059669" }]}>{fmt(summary.totalBumdesa)}</Text>
           </View>
         </View>
@@ -280,8 +280,8 @@ export function ShareRevenueDocument({ data }: { data: ShareRevenueData }) {
             <Text style={[styles.headerText, styles.colAmount]}>Instalasi</Text>
             <Text style={[styles.headerText, styles.colAmount]}>Fiber Optik</Text>
             <Text style={[styles.headerText, styles.colAmount]}>Wireless</Text>
-            <Text style={[styles.headerText, styles.colShare]}>Bagian ISP</Text>
-            <Text style={[styles.headerText, styles.colShare]}>Bagian BumDesa</Text>
+            <Text style={[styles.headerText, styles.colShare]}>Bagi Hasil ISP</Text>
+            <Text style={[styles.headerText, styles.colShare]}>Bagi Hasil BumDesa</Text>
           </View>
 
           {data.data.map((row, i) => (

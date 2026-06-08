@@ -153,11 +153,11 @@ export default function ShareRevenuePage() {
           <p className="text-2xl font-semibold text-foreground mt-1">{formatRupiah(summary.totalRevenue)}</p>
         </div>
         <div className="bg-card rounded-xl border border-blue-200 dark:border-blue-800 p-5">
-          <p className="text-sm text-muted-foreground">Bagian ISP</p>
+          <p className="text-sm text-muted-foreground">Bagi Hasil ISP</p>
           <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{formatRupiah(summary.totalIsp)}</p>
         </div>
         <div className="bg-card rounded-xl border border-emerald-200 dark:border-emerald-800 p-5">
-          <p className="text-sm text-muted-foreground">Bagian BumDesa</p>
+          <p className="text-sm text-muted-foreground">Bagi Hasil BumDesa</p>
           <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1">{formatRupiah(summary.totalBumdesa)}</p>
         </div>
       </div>
@@ -212,8 +212,8 @@ export default function ShareRevenuePage() {
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Instalasi</th>
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Fiber Optik</th>
                   <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Wireless</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Bagian ISP</th>
-                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Bagian BumDesa</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Bagi Hasil ISP</th>
+                  <th className="text-right p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">Bagi Hasil BumDesa</th>
                 </tr>
               </thead>
               <tbody>
